@@ -163,6 +163,30 @@ interface ActiveConversation {
 - `handleAnnotationClick(annotation)`: Loads all conversations for the annotation; opens the most recent one in the AI panel, with UI affordance to switch to other conversations or start a new one
 - `showToast(message, type)`: Displays temporary notification
 
+**Drag-and-Drop Handling:**
+- Register a Tauri `onDragDropEvent` listener (or use the HTML `drop` event on the root element) in `App.tsx`
+- On drop of a single file: validate the file type and call `openDocument()`, same as file picker; reject unsupported types with a toast error
+- On drop of multiple files: open only the first, ignore the rest (no error shown for extras)
+- On drop of a folder: show a toast error "Folders are not supported — please open a single PDF or EPUB file"
+- Prevent default browser behavior for `dragover` and `drop` events to avoid navigation
+
+### Keyboard Shortcuts
+
+Global shortcuts registered in `App.tsx` via `keydown` event listeners. Shortcuts that affect the document viewer should only fire when the viewer has focus and no text input is focused.
+
+| Shortcut | Action | Condition |
+|----------|--------|-----------|
+| `Ctrl+O` | Open file picker dialog | Always |
+| `Escape` | Close AI panel; if panel closed, dismiss selection toolbar | Always |
+| `Ctrl+,` | Open Settings dialog | Always |
+| `Ctrl+W` | Close current document, return to home screen | Document open |
+| `Ctrl+B` | Toggle annotations panel | Document open |
+| `Ctrl+F` | Focus annotation search field | Annotations panel open |
+| `Left Arrow` / `Page Up` | Previous PDF page | PDF viewer focused, no text input focused |
+| `Right Arrow` / `Page Down` | Next PDF page | PDF viewer focused, no text input focused |
+| `+` | Zoom in | PDF viewer focused, no text input focused |
+| `-` | Zoom out | PDF viewer focused, no text input focused |
+
 ### PDF Viewer Component
 
 Renders PDF documents using PDF.js library with text selection support.
@@ -283,7 +307,7 @@ interface EpubViewerState {
 
 ### AI Panel Component
 
-Displays conversation history and handles user input for follow-up questions.
+Displays conversation history and handles user input for follow-up questions. The panel is positioned as a fixed-width overlay on the right side of the screen using absolute/fixed positioning (not a flex sibling that resizes the document area). It renders above the document viewer with a semi-transparent backdrop, allowing the document to remain partially visible behind it.
 
 **Props:**
 ```typescript
@@ -397,11 +421,11 @@ interface SettingsDialogState {
 
 **Available Models:**
 - Default models: gemini-2.5-flash, gemini-2.5-pro, gemini-2.5-flash-lite
-- Model list should be configurable without code changes:
-  - Option 1: Store model list in `settings.json` with a default fallback
-  - Option 2: Fetch available models from Gemini API on Settings dialog open (requires API key)
-- For MVP, use a hardcoded list with a TODO comment to make it configurable post-MVP
-- Future enhancement: Add a "Refresh Models" button in Settings that queries the API for the latest available models
+- Model list is configurable without code changes via `settings.json`:
+  - Store the model list as an array in `settings.json` alongside the API key and selected model
+  - On Settings dialog open, load models from `settings.json`; if no list is defined or the file is invalid, fall back to the built-in default models above
+  - Users can edit `settings.json` directly to add or remove models without recompiling
+- Future enhancement: Add a "Refresh Models" button in Settings that queries the Gemini API for the latest available models and updates `settings.json`
 
 **Connection Testing:**
 1. Temporarily save API key and model
@@ -457,7 +481,15 @@ These are two distinct operations:
 
 **Error Handling:**
 - Gracefully handle database not ready on first launch
-- Use INSERT OR REPLACE for idempotent document insertion
+- Use `ON CONFLICT ... DO UPDATE` for idempotent document insertion (preserves FK-linked child rows):
+  ```sql
+  INSERT INTO documents (id, title, file_path, file_hash, file_type, last_opened, metadata)
+  VALUES (?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(file_path) DO UPDATE SET
+    last_opened = excluded.last_opened,
+    file_hash   = excluded.file_hash;
+  ```
+  Do NOT use `INSERT OR REPLACE` — it deletes the existing row first, triggering `ON DELETE CASCADE` and silently wiping all child annotations and conversations.
 - Log errors to console for debugging
 
 ### LLM Service
@@ -474,18 +506,18 @@ Handles communication with Google Gemini API. All HTTP traffic and API key acces
 interface LLMService {
   streamMessage(
     messages: ChatMessage[],
-    systemPrompt: string,
     onChunk: (chunk: string) => void,
     onComplete: () => void,
     onError: (error: string) => void,
     streamId: string  // Unique ID used to match chunk events to this request
   ): Promise<UnlistenFn>;  // Returns the unlisten function; call it to cancel the stream
-  createExplainPrompt(): string;
 }
 ```
 
+Note: The system prompt is hardcoded in the Rust backend (`src-tauri/src/llm.rs`) and is not passed from the frontend. This keeps it out of the webview context and prevents injection via a compromised webview.
+
 **Streaming Implementation:**
-- Frontend calls `invoke('call_gemini', { messages, systemPrompt, streamId })`
+- Frontend calls `invoke('call_gemini', { messages, streamId })`
 - Rust emits `gemini_chunk_<streamId>` events for each text delta and a final `gemini_done_<streamId>` or `gemini_error_<streamId>` event
 - Frontend listens for these events and invokes `onChunk`, `onComplete`, or `onError` accordingly
 - To cancel mid-stream (e.g., panel closed), the frontend calls the returned `UnlistenFn` and invokes `invoke('cancel_gemini', { streamId })`; the Rust side aborts the HTTP request using an `AbortHandle`
@@ -579,7 +611,7 @@ interface Document {
   id: string;                    // UUID
   title: string;                 // Extracted from filename
   file_path: string;             // Absolute path to file
-  file_hash: string;             // SHA-256 hash of file contents for deduplication
+  file_hash: string;             // SHA-256 hash of file contents; used for (1) advisory deduplication when same hash appears at a different path, and (2) external modification detection (Req 1.14) by comparing stored hash with current hash on file open
   file_type: 'pdf' | 'epub';     // File format
   last_opened: string;           // ISO 8601 timestamp
   last_position: string | null;  // Last saved page number (PDF) or CFI (EPUB)
@@ -683,7 +715,7 @@ Represents a chat session between the user and AI about a specific annotation.
 interface Conversation {
   id: string;                    // UUID
   annotation_id: string;         // Foreign key to annotations
-  mode: 'explain';  // Conversation type; reserved for future modes (e.g. 'quiz', 'summarize')
+  mode: 'explain';  // Conversation type; only 'explain' is supported in MVP
   messages: string;              // JSON array of ChatMessage objects
   summary: string;               // Reserved for future conversation summarization
   created_at: string;            // ISO 8601 timestamp
@@ -804,19 +836,19 @@ A property is a characteristic or behavior that should hold true across all vali
 
 Property 1: File type validation
 *For any* file path, if the file extension is not .pdf or .epub, then attempting to open it should result in an error message and the file should not be opened
-**Validates: Requirements 1.3**
+**Validates: Requirements 1.6**
 
 Property 2: Document persistence
 *For any* valid document file, when opened, a corresponding record should exist in the database with all required fields populated (id, title, file_path, file_hash, file_type, last_opened, metadata)
-**Validates: Requirements 1.4, 1.5**
+**Validates: Requirements 1.7, 1.8**
 
 Property 3: Recent documents ordering
 *For any* set of documents in the database, when retrieved as recent documents, they should be ordered by last_opened timestamp in descending order (most recent first)
-**Validates: Requirements 1.6**
+**Validates: Requirements 1.9**
 
 Property 4: Document reopening
 *For any* document in the recent files list, clicking it should open that document and display it in the appropriate viewer
-**Validates: Requirements 1.7**
+**Validates: Requirements 1.10**
 
 ### PDF Viewer Properties
 
@@ -960,7 +992,7 @@ Property 35: Block math rendering
 
 Property 36: Settings persistence round-trip
 *For any* API key and model selection, saving to settings and then retrieving should return the same values
-**Validates: Requirements 11.6**
+**Validates: Requirements 11.7**
 
 ### Database Schema Properties
 

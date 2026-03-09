@@ -27,7 +27,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Create database initialization logic in Rust backend
     - _Requirements: 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 15.1, 15.4_
 
-  - [ ]* 1.3 Write property test for database schema constraints
+  - [ ] (optional) 1.3 Write property test for database schema constraints
     - **Property 38: Check constraint enforcement**
     - **Validates: Requirements 12.5**
 
@@ -39,11 +39,11 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Handle connection initialization (lazy singleton) and error cases
     - _Requirements: 12.1, 12.2, 12.3, 15.2_
 
-  - [ ]* 1.5 Write property tests for database operations
+  - [ ] (optional) 1.5 Write property tests for database operations
     - **Property 2: Document persistence**
     - **Property 3: Recent documents ordering**
     - **Property 37: Foreign key cascade**
-    - **Validates: Requirements 1.4, 1.5, 1.6, 12.4**
+    - **Validates: Requirements 1.7, 1.9, 12.4**
 
 - [ ] 2. Settings management and API configuration
   - [ ] 2.1 Implement settings service using Tauri Store plugin
@@ -57,7 +57,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
   - [ ] 2.2 Create Settings dialog UI component
     - Build modal dialog with API key input (masked by default)
     - Add show/hide toggle for API key visibility
-    - Implement model selection dropdown with default models (gemini-2.5-flash, gemini-2.5-pro, gemini-2.5-flash-lite)
+    - Implement model selection dropdown: load model list from `settings.json`; if no list is defined or the file is invalid, fall back to built-in defaults (gemini-2.5-flash, gemini-2.5-pro, gemini-2.5-flash-lite)
     - Implement save functionality
     - _Requirements: 11.1, 11.2, 11.3, 11.4_
 
@@ -67,7 +67,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Display success or error feedback
     - _Requirements: 11.5, 11.6_
 
-  - [ ]* 2.4 Write property test for settings persistence
+  - [ ] (optional) 2.4 Write property test for settings persistence
     - **Property 36: Settings persistence round-trip**
     - **Validates: Requirements 11.7**
 
@@ -88,23 +88,23 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Create compute_file_hash Tauri command
     - Use SHA-256 for file hashing
     - Run hash computation asynchronously to avoid blocking UI
-    - _Requirements: 1.7, 1.13, 1.14_
+    - _Requirements: 1.7, 1.14_
 
   - [ ] 3.4 Create document opening and persistence logic
     - Extract document title from filename
     - Generate UUID for document ID
-    - Compute file hash and check for duplicates by file_path (INSERT OR REPLACE)
+    - Compute file hash and check for duplicates by file_path using `ON CONFLICT(file_path) DO UPDATE SET last_opened = excluded.last_opened, file_hash = excluded.file_hash` (do NOT use INSERT OR REPLACE — it cascade-deletes child annotations/conversations)
     - When hash matches an existing document at a different path, warn user (advisory deduplication per design)
     - Insert document record into database
     - Update last_opened timestamp
     - If document is already open, bring focus to it without creating duplicate
     - _Requirements: 1.5, 1.7, 1.8, 1.11_
 
-  - [ ]* 3.5 Write property test for file type validation
+  - [ ] (optional) 3.5 Write property test for file type validation
     - **Property 1: File type validation**
     - **Validates: Requirements 1.6**
 
-  - [ ]* 3.6 Write property test for document persistence
+  - [ ] (optional) 3.6 Write property test for document persistence
     - **Property 2: Document persistence**
     - **Validates: Requirements 1.5, 1.7**
 
@@ -132,7 +132,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Implement right-click menu to hide from recent list (data preserved per Req 1.12)
     - _Requirements: 1.9, 1.10, 1.12, 1.13, 1.14_
 
-  - [ ]* 4.4 Write property test for recent documents ordering
+  - [ ] (optional) 4.4 Write property test for recent documents ordering
     - **Property 3: Recent documents ordering**
     - **Validates: Requirements 1.9**
 
@@ -185,7 +185,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Add keyboard navigation (Page Up/Down for prev/next page)
     - _Requirements: 2.2, 2.3, 2.4, 2.5, 2.9, 2.10_
 
-  - [ ]* 5.4 Write property tests for PDF navigation
+  - [ ] (optional) 5.4 Write property tests for PDF navigation
     - **Property 5: PDF initial page**
     - **Property 6: PDF page navigation bounds**
     - **Property 7: PDF page navigation**
@@ -197,7 +197,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Re-render page when zoom changes
     - _Requirements: 2.6, 2.7_
 
-  - [ ]* 5.6 Write property test for PDF zoom rendering
+  - [ ] (optional) 5.6 Write property test for PDF zoom rendering
     - **Property 8: PDF zoom rendering**
     - **Validates: Requirements 2.7**
 
@@ -216,7 +216,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Invoke onTextSelected callback with text, page number, and normalized rectangles
     - _Requirements: 4.1, 4.4, 4.6_
 
-  - [ ]* 5.9 Write property test for PDF coordinate normalization
+  - [ ] (optional) 5.9 Write property test for PDF coordinate normalization
     - **Property 9: PDF coordinate normalization**
     - **Validates: Requirements 4.4**
 
@@ -239,7 +239,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Validate CFI format
     - _Requirements: 3.5_
 
-  - [ ]* 6.4 Write property tests for EPUB viewer
+  - [ ] (optional) 6.4 Write property tests for EPUB viewer
     - **Property 10: EPUB initial chapter**
     - **Property 11: EPUB chapter navigation**
     - **Property 12: EPUB CFI tracking**
@@ -253,7 +253,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Implement polling fallback for platforms with broken selection events (poll window.getSelection() in iframe every 100ms for up to 500ms on mouseup)
     - _Requirements: 4.2_
 
-  - [ ]* 6.6 Write property test for EPUB text selection capture
+  - [ ] (optional) 6.6 Write property test for EPUB text selection capture
     - **Property 14: EPUB text selection capture**
     - **Validates: Requirements 4.2**
 
@@ -271,7 +271,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Dismiss on click outside, document scroll, or window resize
     - _Requirements: 4.3, 4.5, 5.1_
 
-  - [ ]* 8.2 Write component test for selection toolbar positioning
+  - [ ] (optional) 8.2 Write component test for selection toolbar positioning
     - **Property 15: Selection toolbar positioning**
     - **Validates: Requirements 4.3**
 
@@ -283,7 +283,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Dismiss toolbar and clear selection
     - _Requirements: 5.2, 5.3, 5.4, 5.5, 5.6_
 
-  - [ ]* 8.4 Write property tests for annotation creation
+  - [ ] (optional) 8.4 Write property tests for annotation creation
     - **Property 16: Annotation creation without conversation**
     - **Property 17: Annotation data storage**
     - **Property 18: Annotation-document association**
@@ -308,7 +308,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Persist display across chapter navigation
     - _Requirements: 5.7, 5.8, 5.9_
 
-  - [ ]* 9.3 Write component tests for annotation display
+  - [ ] (optional) 9.3 Write component tests for annotation display
     - **Property 21: Annotation retrieval**
     - **Property 22: Annotation visual indicators**
     - **Property 23: Annotation detail display**
@@ -381,7 +381,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Preserve formatting for code blocks, lists, and other markdown elements
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5_
 
-  - [ ]* 11.3 Write component tests for markdown and math rendering
+  - [ ] (optional) 11.3 Write component tests for markdown and math rendering
     - **Property 33: Markdown rendering**
     - **Property 34: Inline math rendering**
     - **Property 35: Block math rendering**
@@ -401,7 +401,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Display loading indicator while waiting for response
     - _Requirements: 6.1, 6.2, 7.3, 7.4, 7.5, 7.6_
 
-  - [ ]* 11.6 Write tests for annotation-and-conversation creation
+  - [ ] (optional) 11.6 Write tests for annotation-and-conversation creation
     - **Property 24: Annotation creation with explanation**
     - **Property 25: Deferred explanation creation**
     - **Property 27: Conversation creation**
@@ -434,7 +434,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Update conversation record in database with new messages
     - _Requirements: 8.2, 8.3, 8.4, 8.5_
 
-  - [ ]* 11.11 Write property tests for conversation management
+  - [ ] (optional) 11.11 Write property tests for conversation management
     - **Property 28: Conversation persistence round-trip**
     - **Property 29: Conversation context preservation**
     - **Property 30: Conversation message accumulation**
@@ -526,7 +526,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Test PDF.js worker loading on all platforms
     - Test EPUB text selection on all platforms
 
-  - [ ]* 17.2 Write integration tests for end-to-end flows
+  - [ ] (optional) 17.2 Write integration tests for end-to-end flows
     - Test complete document opening flow
     - Test annotation creation and retrieval flow
     - Test AI explanation flow

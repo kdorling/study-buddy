@@ -81,7 +81,7 @@ Study Buddy is an AI-powered study companion desktop application that helps stud
 3. WHEN text is selected, THE Selection_Toolbar SHALL appear near the selection
 4. THE System SHALL normalize PDF selection coordinates relative to page dimensions
 5. WHEN a user clicks outside the Selection_Toolbar, THE System SHALL dismiss the toolbar and clear the selection
-6. WHEN a user clicks and drags the mouse while holding the left mouse button down, THE system SHALL highlight text until the mouse button is released
+6. WHEN a user clicks and drags the mouse while holding the left mouse button down, THE System SHALL highlight text until the mouse button is released
 
 ### Requirement 5: Annotation Creation and Management
 
@@ -160,9 +160,9 @@ Study Buddy is an AI-powered study companion desktop application that helps stud
 #### Acceptance Criteria
 
 1. WHEN a conversation is created or updated, THE System SHALL persist messages to the Database
-2. WHEN a user clicks on a previous annotation, THE System SHALL load the associated conversation
-3. THE System SHALL display the full conversation history in the AI_Panel
-4. THE System SHALL allow users to continue previous conversations with new questions
+2. WHEN a user clicks on a previous annotation, THE System SHALL by default load the most recently updated conversation associated with that annotation
+3. THE System SHALL display the full message history for the loaded conversation in the AI_Panel
+4. THE System SHALL allow users to select among multiple conversations associated with an annotation and continue the selected previous conversation with new questions
 
 ### Requirement 11: Settings Management
 
@@ -243,7 +243,7 @@ Study Buddy is an AI-powered study companion desktop application that helps stud
 3. WHEN a user clicks an annotation in the list, THE System SHALL scroll to that annotation in the document and show its details
 4. WHEN a user right-clicks an annotation, THE System SHALL offer a "Delete" option
 5. WHEN a user selects "Delete" for an annotation, THE System SHALL display a confirmation dialog warning that this action will permanently remove the annotation and all associated conversations
-6. WHEN a user confirms deletion of an annotation, THE System SHALL remove the annotation and its associated conversation from the Database
+6. WHEN a user confirms deletion of an annotation, THE System SHALL remove the annotation and all associated conversations from the Database
 7. WHEN an annotation is deleted, THE System SHALL remove its visual indicator from the document view
 8. THE annotations panel SHALL provide a search field that filters the annotation list to entries whose selected text or note contains the search query
 9. WHEN the search field is empty, THE annotations panel SHALL display all annotations for the document
