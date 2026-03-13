@@ -56,7 +56,7 @@ The application uses a local SQLite database to persist documents, annotations, 
 - **PdfViewer**: Renders PDF pages using PDF.js, handles page navigation and zoom, manages text layer for selection
 - **EpubViewer**: Renders EPUB content using react-reader library, handles chapter navigation, applies dark theme styling
 - **AiPanel**: Displays conversation history, handles message input, renders markdown with math support
-- **SelectionToolbar**: Floating toolbar that appears on text selection, provides "Explain" action
+- **SelectionToolbar**: Floating toolbar that appears on text selection, provides "Annotate" and "Explain" actions
 - **SettingsDialog**: Configuration interface for API key and model selection, connection testing
 - **LibraryScreen**: Lists all stored documents (including hidden-from-recent); supports opening, restoring to recent, and deleting stored data
 
@@ -274,6 +274,7 @@ interface EpubViewerState {
 3. Generate object URL for Blob
 4. Pass URL to ReactReader component
 5. Apply dark theme overrides to EPUB content
+6. Revoke object URL on component unmount via `URL.revokeObjectURL()` to prevent memory leaks
 
 **Text Selection:**
 - Register `selected` event listener on rendition
@@ -486,6 +487,7 @@ These are two distinct operations:
   INSERT INTO documents (id, title, file_path, file_hash, file_type, last_opened, metadata)
   VALUES (?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(file_path) DO UPDATE SET
+    title       = excluded.title,
     last_opened = excluded.last_opened,
     file_hash   = excluded.file_hash;
   ```
@@ -956,7 +958,7 @@ Property 27: Conversation creation
 
 Property 28: Conversation persistence round-trip
 *For any* conversation, saving messages to the database and then retrieving them should produce equivalent message content
-**Validates: Requirements 7.8, 10.1**
+**Validates: Requirements 7.9, 10.1**
 
 Property 29: Conversation context preservation
 *For any* conversation with N messages, sending a new message should include all N previous messages in the API request
@@ -1134,7 +1136,7 @@ Unit tests validate specific examples, edge cases, and error conditions for indi
 - Test file type detection for various extensions (.pdf, .PDF, .epub, .EPUB, .txt, .doc)
 - Test filename extraction from paths with various formats
 - Test UUID generation for uniqueness
-- Test document insertion with duplicate file paths (should replace)
+- Test document insertion with duplicate file paths (should upsert via ON CONFLICT, not replace)
 
 **PDF Viewer:**
 - Test page navigation boundary conditions (page 0, page > total)

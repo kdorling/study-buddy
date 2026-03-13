@@ -4,7 +4,7 @@
 
 Study Buddy is a cross-platform desktop application built with Tauri 2 (Rust backend) and React 19 (TypeScript frontend). The implementation follows a layered architecture: Tauri backend handles file system access, database operations, and API calls; React frontend manages UI rendering and user interactions. The application uses SQLite for local data persistence and integrates with Google's Gemini API for AI-powered explanations.
 
-Implementation will proceed incrementally, starting with core infrastructure (database, file handling), then document viewing capabilities (PDF and EPUB), followed by annotation features, and finally AI integration. Each major component includes property-based tests to validate correctness properties from the design document.
+Implementation will proceed incrementally, starting with core infrastructure (database, file handling), then document viewing capabilities (PDF and EPUB), followed by annotation features, and finally AI integration. Each major component includes tests to validate correctness properties from the design document — property-based tests (fast-check) for data and logic layers, and component tests (React Testing Library) for UI rendering and interactions.
 
 **Architectural decision — Gemini API calls:** Per the design, all Gemini HTTP traffic and API key access live in the Tauri Rust backend (`src-tauri/src/llm.rs`). The frontend `llm.ts` is a thin IPC shim that invokes `call_gemini` via Tauri's `invoke()` and subscribes to streamed chunk events. The API key never enters the webview context. Any existing frontend code that calls the Gemini API directly must be replaced with this architecture.
 
@@ -92,8 +92,8 @@ Implementation will proceed incrementally, starting with core infrastructure (da
 
   - [ ] 3.4 Create document opening and persistence logic
     - Extract document title from filename
-    - Generate UUID for document ID
-    - Compute file hash and check for duplicates by file_path using `ON CONFLICT(file_path) DO UPDATE SET last_opened = excluded.last_opened, file_hash = excluded.file_hash` (do NOT use INSERT OR REPLACE — it cascade-deletes child annotations/conversations)
+    - Generate UUID for document ID (used only for new inserts; on conflict, the existing row's ID is preserved)
+    - Compute file hash and check for duplicates by file_path using `ON CONFLICT(file_path) DO UPDATE SET title = excluded.title, last_opened = excluded.last_opened, file_hash = excluded.file_hash` (do NOT use INSERT OR REPLACE — it cascade-deletes child annotations/conversations)
     - When hash matches an existing document at a different path, warn user (advisory deduplication per design)
     - Insert document record into database
     - Update last_opened timestamp
@@ -227,6 +227,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Create Blob from file data with MIME type application/epub+zip
     - Generate object URL and pass to ReactReader component
     - Apply dark theme overrides to EPUB content
+    - Revoke object URL on component unmount via `URL.revokeObjectURL()` to prevent memory leaks
     - _Requirements: 3.1, 3.3_
 
   - [ ] 6.2 Implement EPUB chapter navigation
@@ -268,7 +269,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Calculate position based on selection bounding rectangle
     - Center toolbar horizontally, position 50px above selection
     - Update position when selection changes
-    - Dismiss on click outside, document scroll, or window resize
+    - Dismiss toolbar and clear the selection on click outside, document scroll, or window resize
     - _Requirements: 4.3, 4.5, 5.1_
 
   - [ ] (optional) 8.2 Write component test for selection toolbar positioning
@@ -372,7 +373,7 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Allow switching between conversations for same annotation
     - Provide "New conversation" button to start a fresh conversation for the same annotation (does not delete previous ones)
     - Most recent conversation shown by default when opening an annotation
-    - _Requirements: 6.3, 6.4, 7.4, 10.2, 10.3_
+    - _Requirements: 6.2, 6.3, 6.4, 7.4, 10.2, 10.3_
 
   - [ ] 11.2 Implement markdown and math rendering
     - Use react-markdown for markdown rendering
@@ -399,13 +400,13 @@ Implementation will proceed incrementally, starting with core infrastructure (da
     - Open AI panel with selected text displayed
     - Auto-send initial explanation request to Gemini API via Rust backend
     - Display loading indicator while waiting for response
-    - _Requirements: 6.1, 6.2, 7.3, 7.4, 7.5, 7.6_
+    - _Requirements: 6.1, 7.3, 7.4, 7.5, 7.6_
 
   - [ ] (optional) 11.6 Write tests for annotation-and-conversation creation
     - **Property 24: Annotation creation with explanation**
     - **Property 25: Deferred explanation creation**
     - **Property 27: Conversation creation**
-    - **Validates: Requirements 6.1, 6.2, 7.3**
+    - **Validates: Requirements 6.1, 7.3**
 
   - [ ] 11.7 Implement streaming response display
     - Stream AI response token-by-token via chunk events
@@ -577,7 +578,7 @@ These tasks are mentioned in the design document but are not covered by the requ
 
 ## Notes
 
-- Tasks marked with `*` are optional and can be skipped for faster MVP
+- Tasks marked with `(optional)` are optional and can be skipped for faster MVP
 - Each task references specific requirements for traceability
 - Checkpoints ensure incremental validation at major milestones
 - Property tests (fast-check) validate universal correctness properties; component tests (React Testing Library) validate UI behavior — see design document Testing Strategy for which properties suit which approach

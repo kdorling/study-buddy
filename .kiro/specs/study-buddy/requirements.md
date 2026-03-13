@@ -218,7 +218,7 @@ Study Buddy is an AI-powered study companion desktop application that helps stud
 5. WHEN a document is open, THE System SHALL display the appropriate viewer (PDF or EPUB)
 6. WHEN a conversation is active, THE AI_Panel SHALL appear as an overlay on the right side
 7. THE System SHALL use a dark theme throughout the interface
-8. THE System SHALL support keyboard shortcuts: Ctrl+O (open file), Escape (close AI panel / dismiss toolbar), Ctrl+, (open settings), Left/Right Arrow (previous/next PDF page when the document viewer has focus and no text input is focused), +/- keys (zoom in/out when the document viewer has focus), Ctrl+W (close current document and return to home screen), Ctrl+B (toggle annotations panel), Ctrl+F (focus annotation search field)
+8. THE System SHALL support keyboard shortcuts: Ctrl+O (open file), Escape (close AI panel / dismiss toolbar), Ctrl+, (open settings), Left/Right Arrow or Page Up/Page Down (previous/next PDF page when the document viewer has focus and no text input is focused), +/- keys (zoom in/out when the document viewer has focus), Ctrl+W (close current document and return to home screen), Ctrl+B (toggle annotations panel), Ctrl+F (focus annotation search field)
 
 ### Requirement 15: Application Initialization
 
@@ -271,7 +271,7 @@ Study Buddy is an AI-powered study companion desktop application that helps stud
 2. THE Library screen SHALL display each document's title, file type, last opened date, and annotation count
 3. WHEN a user clicks a document in the Library, THE System SHALL attempt to open it; if the file no longer exists on disk THE System SHALL display an error and offer to delete the document data
 4. WHEN a user right-clicks a document in the Library, THE System SHALL offer a "Delete stored data" option that permanently removes the document record and all associated annotations and conversations from the Database
-5. WHEN a user confirms deletion of stored data, THE System SHALL display a warning that this action cannot be undone
+5. WHEN a user selects "Delete stored data" for a document, THE System SHALL display a confirmation dialog warning that this action cannot be undone before proceeding with deletion
 6. WHEN a user right-clicks a document in the Library that is hidden from the recent list, THE System SHALL offer an option to restore it to the recent files list
 
 ### Requirement 19: Offline Mode and Degraded Functionality
